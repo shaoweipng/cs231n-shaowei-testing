@@ -185,7 +185,30 @@ class FullyConnectedNet(object):
     # beta2, etc. Scale parameters should be initialized to one and shift      #
     # parameters should be initialized to zero.                                #
     ############################################################################
-    pass
+    #pass
+    
+    #self.params['W1'] = np.random.normal(0, weight_scale, (input_dim, hidden_dim[0]))
+    #self.params['b1'] = np.zeros(hidden_dim[0])
+    
+    #self.params['W2'] = np.random.normal(0, weight_scale, (hidden_dim[0], hidden_dim[1]))
+    #self.params['b2'] = np.zeros(hidden_dim[1])
+    
+    #self.params['W3'] = np.random.normal(0, weight_scale, (hidden_dim[1], hidden_dim[2]))
+    #self.params['b3'] = np.zeros(hidden_dim[2])
+    
+    #self.params['W4'] = np.random.normal(0, weight_scale, (hidden_dim[2], num_classes))
+    #self.params['b4'] = np.zeros(num_classes)
+
+    for i in range(1, self.num_layers+1):
+        layer_input_dim = input_dim if i == 1 else hidden_dims[i-2]
+        layer_output_dim = num_classes if i == self.num_layers else hidden_dims[i-1]
+
+        param_w = 'W' + str(i)
+        param_b = 'b' + str(i)
+        
+        self.params[param_w] = np.random.normal(0, weight_scale, (layer_input_dim, layer_output_dim))
+        self.params[param_b] = np.zeros(layer_output_dim)
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -244,6 +267,27 @@ class FullyConnectedNet(object):
     # layer, etc.                                                              #
     ############################################################################
     pass
+    affine_relu_cache={}
+    
+    #    hidden_layer1, affine_relu_cache[1] = affine_relu_forward(X, W1, b1)
+    #    hidden_layer2, affine_relu_cache[2] = affine_relu_forward(hidden_layer1, W2, b2)
+    #    hidden_layer3, affine_relu_cache[3] = affine_relu_forward(hidden_layer2, W3, b3)
+    #    scores, affine_cache = affine_forward(hidden_layer3, W4, b4)
+    
+    new_input = X
+    for i in range(1, self.num_layers):
+        param_w = 'W' + str(i)
+        param_b = 'b' + str(i)
+
+        new_input, affine_relu_cache[i] \
+            = affine_relu_forward(new_input, self.params[param_w], self.params[param_b])
+        
+        #scores, affine_cache = affine_forward(hidden_layer, W2, b2)
+
+    last_param_w = 'W' + str(self.num_layers)
+    last_param_b = 'b' + str(self.num_layers)
+    scores, affine_cache \
+        = affine_forward(new_input, self.params[last_param_w], self.params[last_param_b])
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -267,6 +311,31 @@ class FullyConnectedNet(object):
     # of 0.5 to simplify the expression for the gradient.                      #
     ############################################################################
     pass
+    loss, dscores  = softmax_loss(scores, y)
+ 
+    #    hidden_layer1, affine_relu_cache[1] = affine_relu_forward(X, W1, b1)
+    #    hidden_layer2, affine_relu_cache[2] = affine_relu_forward(hidden_layer1, W2, b2)
+    #    hidden_layer3, affine_relu_cache[3] = affine_relu_forward(hidden_layer2, W3, b3)
+    #    scores, affine_cache = affine_forward(hidden_layer3, W4, b4)
+    # affine_dx, dW4, db4 = affine_backward(dscores, affine_cache)
+    # affine_dx, dW3, db3 = affine_relu_backward(affine_dx, affine_relu_cache[3])
+    # affine_dx, dW2, db2 = affine_relu_backward(affine_dx, affine_relu_cache[2])
+    # affine_dx, dW1, db1 = affine_relu_backward(affine_dx, affine_relu_cache[1])
+
+    last_param_w = 'W' + str(self.num_layers)
+    last_param_b = 'b' + str(self.num_layers)
+    affine_dx, affine_dw, affine_db = affine_backward(dscores, affine_cache)
+    grads[last_param_w] = affine_dw + self.reg * self.params[last_param_w]
+    grads[last_param_b] = affine_db
+    loss += 0.5 * self.reg*(np.sum(self.params[last_param_w]* self.params[last_param_w])) 
+    
+    for i in range(self.num_layers-1,0,-1):
+        affine_dx, affine_dw, affine_db = affine_relu_backward(affine_dx, affine_relu_cache[i])
+        param_w = 'W' + str(i)
+        param_b = 'b' + str(i)   
+        grads[param_w] = affine_dw + self.reg * self.params[param_w]
+        grads[param_b] = affine_db
+        loss += 0.5 * self.reg*(np.sum(self.params[param_w]* self.params[param_w])) 
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
